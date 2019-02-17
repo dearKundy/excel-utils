@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.kundy.excelutils.mapper.TtlProductInfoMapper">
+
+    <select id="listProduct" resultType="com.kundy.excelutils.entity.po.TtlProductInfoPo"
+            parameterType="java.util.Map">
+        SELECT * FROM ttl_product_info LIMIT #{offset},#{limit}
+    </select>
+
+</mapper>
