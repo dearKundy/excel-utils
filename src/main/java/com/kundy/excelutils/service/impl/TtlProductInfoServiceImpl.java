@@ -36,27 +36,36 @@ public class TtlProductInfoServiceImpl implements TtlProductInfoService {
 
     @Override
     public void export(HttpServletResponse response, String fileName) {
-        ExcelUtils excelUtils = new ExcelUtils(this.multiThreadListProduct(), getHeaderInfo(), getFormatInfo());
+        // 待导出数据
+        List<TtlProductInfoPo> productInfoPos = this.multiThreadListProduct();
+        ExcelUtils excelUtils = new ExcelUtils(productInfoPos, getHeaderInfo(), getFormatInfo());
         excelUtils.sendHttpResponse(response, fileName, excelUtils.getWorkbook());
     }
 
     // 获取表头信息
     private List<ExcelHeaderInfo> getHeaderInfo() {
         return Arrays.asList(
-                new ExcelHeaderInfo(0, 0, 0, 0, "id"),
-                new ExcelHeaderInfo(0, 0, 1, 1, "商品名称"),
-                new ExcelHeaderInfo(0, 0, 2, 2, "类型ID"),
-                new ExcelHeaderInfo(0, 0, 3, 3, "分类名称"),
-                new ExcelHeaderInfo(0, 0, 4, 4, "品牌ID"),
-                new ExcelHeaderInfo(0, 0, 5, 5, "品牌名称"),
-                new ExcelHeaderInfo(0, 0, 6, 6, "商店ID"),
-                new ExcelHeaderInfo(0, 0, 7, 7, "商店名称"),
-                new ExcelHeaderInfo(0, 0, 8, 8, "价格"),
-                new ExcelHeaderInfo(0, 0, 9, 9, "库存"),
-                new ExcelHeaderInfo(0, 0, 10, 10, "销量"),
-                new ExcelHeaderInfo(0, 0, 11, 11, "插入时间"),
-                new ExcelHeaderInfo(0, 0, 12, 12, "更新时间"),
-                new ExcelHeaderInfo(0, 0, 13, 13, "记录是否已经删除")
+                new ExcelHeaderInfo(1, 1, 0, 0, "id"),
+                new ExcelHeaderInfo(1, 1, 1, 1, "商品名称"),
+
+                new ExcelHeaderInfo(0, 0, 2, 3, "分类"),
+                new ExcelHeaderInfo(1, 1, 2, 2, "类型ID"),
+                new ExcelHeaderInfo(1, 1, 3, 3, "分类名称"),
+
+                new ExcelHeaderInfo(0, 0, 4, 5, "品牌"),
+                new ExcelHeaderInfo(1, 1, 4, 4, "品牌ID"),
+                new ExcelHeaderInfo(1, 1, 5, 5, "品牌名称"),
+
+                new ExcelHeaderInfo(0, 0, 6, 7, "商店"),
+                new ExcelHeaderInfo(1, 1, 6, 6, "商店ID"),
+                new ExcelHeaderInfo(1, 1, 7, 7, "商店名称"),
+
+                new ExcelHeaderInfo(1, 1, 8, 8, "价格"),
+                new ExcelHeaderInfo(1, 1, 9, 9, "库存"),
+                new ExcelHeaderInfo(1, 1, 10, 10, "销量"),
+                new ExcelHeaderInfo(1, 1, 11, 11, "插入时间"),
+                new ExcelHeaderInfo(1, 1, 12, 12, "更新时间"),
+                new ExcelHeaderInfo(1, 1, 13, 13, "记录是否已经删除")
         );
     }
 
@@ -80,11 +89,11 @@ public class TtlProductInfoServiceImpl implements TtlProductInfoService {
         List<TtlProductInfoPo> productInfoPos = new ArrayList<>();
 
         int totalNum = 500000;
-        int loopNum = new Double(Math.ceil(totalNum / THREAD_MAX_ROW)).intValue();
+        int loopNum = new Double(Math.ceil((double) totalNum / THREAD_MAX_ROW)).intValue();
         log.info("多线程查询，总数：{},开启线程数：{}", totalNum, loopNum);
         long start = System.currentTimeMillis();
 
-        executeTask(tasks, loopNum);
+        executeTask(tasks, loopNum, totalNum);
 
         for (FutureTask<List<TtlProductInfoPo>> task : tasks) {
             try {
@@ -99,14 +108,19 @@ public class TtlProductInfoServiceImpl implements TtlProductInfoService {
     }
 
     // 执行查询任务
-    private void executeTask(List<FutureTask<List<TtlProductInfoPo>>> tasks, int loopNum) {
+    private void executeTask(List<FutureTask<List<TtlProductInfoPo>>> tasks, int loopNum, int total) {
         for (int i = 0; i < loopNum; i++) {
             Map<String, Object> map = new HashMap<>();
             map.put("offset", i * THREAD_MAX_ROW);
-            map.put("limit", THREAD_MAX_ROW);
+            if (i == loopNum - 1) {
+                map.put("limit", total - THREAD_MAX_ROW * i);
+            } else {
+                map.put("limit", THREAD_MAX_ROW);
+            }
             FutureTask<List<TtlProductInfoPo>> task = new FutureTask<>(new listThread(map));
             log.info("开始查询第{}条开始的{}条记录", i * THREAD_MAX_ROW, THREAD_MAX_ROW);
             new Thread(task).start();
+            // 将任务添加到tasks列表中
             tasks.add(task);
         }
     }
@@ -115,7 +129,7 @@ public class TtlProductInfoServiceImpl implements TtlProductInfoService {
 
         private Map<String, Object> map;
 
-        public listThread(Map<String, Object> map) {
+        private listThread(Map<String, Object> map) {
             this.map = map;
         }
 

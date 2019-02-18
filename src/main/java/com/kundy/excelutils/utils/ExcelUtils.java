@@ -85,11 +85,15 @@ public class ExcelUtils {
             Integer lastCol = excelHeaderInfo.getLastCol();
             Integer firstCol = excelHeaderInfo.getFirstCol();
 
+            // 行距或者列距大于0才进行单元格融合
             if ((lastRow - firstRow) != 0 || (lastCol - firstCol) != 0) {
                 sheet.addMergedRegion(new CellRangeAddress(firstRow, lastRow, firstCol, lastCol));
             }
+            // 获取当前表头的首行位置
             Row row = sheet.getRow(firstRow);
+            // 在表头的首行与首列位置创建一个新的单元格
             Cell cell = row.createCell(firstCol);
+            // 赋值单元格
             cell.setCellValue(excelHeaderInfo.getTitle());
             cell.setCellStyle(style);
             sheet.setColumnWidth(firstCol, sheet.getColumnWidth(firstCol) * 17 / 12);
@@ -100,6 +104,7 @@ public class ExcelUtils {
     private void createContent(Row row, CellStyle style, String[][] content, int i, Field[] fields) {
         List<String> columnNames = getBeanProperty(fields);
         for (int j = 0; j < columnNames.size(); j++) {
+            // 如果格式化Map为空，默认为字符串格式
             if (formatInfo == null) {
                 row.createCell(j).setCellValue(content[i][j]);
                 continue;
@@ -119,6 +124,9 @@ public class ExcelUtils {
                         cell.setCellValue(Double.parseDouble(content[i][j]));
                         break;
                     case "DATE":
+                        style.setDataFormat(HSSFDataFormat.getBuiltinFormat("yyyy-MM-dd HH:mm:ss"));
+                        Cell cell1 = row.createCell(j);
+                        cell1.setCellStyle(style);
                         row.createCell(j).setCellValue(this.parseDate(content[i][j]));
                 }
             } else {
@@ -133,6 +141,7 @@ public class ExcelUtils {
         String[][] datas = new String[dataSize][];
         // 获取报表的列数
         Field[] fields = list.get(0).getClass().getDeclaredFields();
+        // 获取实体类的字段名称数组
         List<String> columnNames = this.getBeanProperty(fields);
         for (int i = 0; i < dataSize; i++) {
             datas[i] = new String[fields.length];
